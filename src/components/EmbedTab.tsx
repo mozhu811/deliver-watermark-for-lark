@@ -59,9 +59,9 @@ const EmbedTab = () => {
     const worksheet: XLSX.WorkSheet = XLSX.utils.aoa_to_sheet(headers);
 
     const workbook: XLSX.WorkBook = {
-      SheetNames: ['Sheet1'],
+      SheetNames: [viewName],
       Sheets: {
-        'Sheet1': worksheet,
+        viewName: worksheet,
       },
     };
 
