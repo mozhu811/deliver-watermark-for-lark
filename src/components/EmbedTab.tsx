@@ -1,13 +1,27 @@
 import {Button, Form, Input} from "antd";
 import {Watermark} from "../lib/types";
-import {bitable, IField} from "@lark-base-open/js-sdk";
+import {bitable, Env, IField} from "@lark-base-open/js-sdk";
 import * as XLSX from 'xlsx';
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import axios from "axios";
 
 const EmbedTab = () => {
   const [form] = Form.useForm();
   const [watermark, setWatermark] = useState<Watermark>()
+  const [pluginId, setPluginId] = useState<string>('')
+  const [env, setEnv] = useState<Env>()
+  const [tenantKey, setTenantKey] = useState<string>()
+  useEffect(() => {
+    const fn = async () => {
+      const pluginId = await bitable.bridge.getInstanceId();
+      const env = await bitable.bridge.getEnv();
+      const tenantKey = await bitable.bridge.getTenantKey();
+      setPluginId(pluginId)
+      setEnv(env)
+      setTenantKey(tenantKey)
+    }
+    fn()
+  }, []);
   const onFinish = async (watermark: Watermark) => {
     await export2Excel()
     watermark.time = new Date()
@@ -77,7 +91,8 @@ const EmbedTab = () => {
 
     axios.post('https://123.60.56.112:9001/flow', formData, {
       headers: {
-        'Content-Type': 'multipart/form-data'
+        'Content-Type': 'multipart/form-data',
+        'X-Plugin-Id': pluginId
       }
     })
       .then(response => {
