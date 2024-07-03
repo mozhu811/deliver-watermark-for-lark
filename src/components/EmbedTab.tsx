@@ -52,62 +52,68 @@ const EmbedTab = () => {
       headers[0].push(fieldMeta.name);
     }
 
+    // 创建一个空的Excel
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([]));
+    const file = XLSX.write(wb, {bookType: 'xlsx', type: 'array'});
+    const blob: Blob = new Blob([file], {type: 'application/octet-stream'});
+
     console.log(fields);
     console.log(headers);
 
-    // 获取字段数据
-    const recordIdList = await activeView.getVisibleRecordIdList();
-    for (const recordId of recordIdList) {
-      if (!recordId) {
-        continue;
-      }
-
-      const row: string[] = [];
-      for (const field of fields) {
-        const cellString = await field.getCellString(recordId);
-        row.push(cellString);
-      }
-      headers.push(row);
-    }
-
-    const worksheet: XLSX.WorkSheet = XLSX.utils.aoa_to_sheet(headers);
-
-    const workbook: XLSX.WorkBook = {
-      SheetNames: [viewName],
-      Sheets: {
-        viewName: worksheet,
-      },
-    };
-
-    const excelBuffer: any = XLSX.write(workbook, {bookType: 'xlsx', type: 'array'});
-
-    // 创建 Blob 对象并触发下载
-    const blob: Blob = new Blob([excelBuffer], {type: 'application/octet-stream'});
-
-    // 创建 FormData 对象
-    const formData = new FormData();
-    formData.append("contentDeliver", JSON.stringify(watermark))
-    formData.append("document", blob, "data.xlsx")
-
-    axios.post('https://123.60.56.112:9001/flow', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        'X-Plugin-Id': pluginId
-      }
-    })
-      .then(response => {
-        const url = window.URL.createObjectURL(response.data);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'response-file.xlsx'; // 设置下载文件的名称
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-      })
-      .catch(error => {
-        console.error('Error:', error);
-      });
+    // // 获取字段数据
+    // const recordIdList = await activeView.getVisibleRecordIdList();
+    // for (const recordId of recordIdList) {
+    //   if (!recordId) {
+    //     continue;
+    //   }
+    //
+    //   const row: string[] = [];
+    //   for (const field of fields) {
+    //     const cellString = await field.getCellString(recordId);
+    //     row.push(cellString);
+    //   }
+    //   headers.push(row);
+    // }
+    //
+    // const worksheet: XLSX.WorkSheet = XLSX.utils.aoa_to_sheet(headers);
+    //
+    // const workbook: XLSX.WorkBook = {
+    //   SheetNames: [viewName],
+    //   Sheets: {
+    //     viewName: worksheet,
+    //   },
+    // };
+    //
+    // const excelBuffer: any = XLSX.write(workbook, {bookType: 'xlsx', type: 'array'});
+    //
+    // // 创建 Blob 对象并触发下载
+    // const blob: Blob = new Blob([excelBuffer], {type: 'application/octet-stream'});
+    //
+    // // 创建 FormData 对象
+    // const formData = new FormData();
+    // formData.append("contentDeliver", JSON.stringify(watermark))
+    // formData.append("document", blob, "data.xlsx")
+    //
+    // axios.post('https://123.60.56.112:9001/flow', formData, {
+    //   headers: {
+    //     'Content-Type': 'multipart/form-data',
+    //     'X-Plugin-Id': pluginId
+    //   }
+    // })
+    //   .then(response => {
+    //     const url = window.URL.createObjectURL(response.data);
+    //     const a = document.createElement('a');
+    //     a.href = url;
+    //     a.download = 'response-file.xlsx'; // 设置下载文件的名称
+    //     document.body.appendChild(a);
+    //     a.click();
+    //     document.body.removeChild(a);
+    //     window.URL.revokeObjectURL(url);
+    //   })
+    //   .catch(error => {
+    //     console.error('Error:', error);
+    //   });
   }
   return (
     <>
