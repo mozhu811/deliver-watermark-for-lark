@@ -1,5 +1,5 @@
 export interface Watermark {
-  from?: string,
-  to?: string,
+  from: string,
+  to: string,
   time?: Date
 }
