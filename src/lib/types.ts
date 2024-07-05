@@ -3,3 +3,9 @@ export interface Watermark {
   to: string,
   time?: Date
 }
+
+export interface TabProps{
+  pluginId?: string,
+  tenantKey?: string
+  baseUserId?: string
+}

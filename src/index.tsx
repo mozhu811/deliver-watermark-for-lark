@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client'
 import {bitable} from '@lark-base-open/js-sdk';
 import {Tabs, TabsProps} from 'antd';
 import EmbedTab from "./components/EmbedTab";
+import {TabProps} from "./lib/types";
+import ExtractTab from "./components/ExtractTab";
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
@@ -10,37 +12,35 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   </React.StrictMode>
 )
 
-const items: TabsProps['items'] = [
-  {
-    key: 'embed',
-    label: '嵌入水印',
-    children: <EmbedTab />
-  },
-  {
-    key: 'extract',
-    label: '提取水印',
-    children: (
-      <p>extract</p>
-    )
-  }
-]
-
 function LoadApp() {
-  const [userId, setUserId] = useState<string>()
-
+  const [tabProps, setTabProps] = useState<TabProps>()
   useEffect(() => {
     const fn = async () => {
-      const userId = await bitable.bridge.getBaseUserId()
-      setUserId(userId)
-      const table = await bitable.base.getActiveTable();
-      const tableName = await table.getName();
+      const baseUserId = await bitable.bridge.getBaseUserId()
+      const tenantKey = await bitable.bridge.getTenantKey();
+      const pluginId = await bitable.bridge.getInstanceId();
+      setTabProps({baseUserId, tenantKey, pluginId})
     };
     fn();
   }, []);
 
+  const items: TabsProps['items'] = [
+    {
+      key: 'embed',
+      label: '嵌入水印',
+      children: <EmbedTab tenantKey={tabProps?.tenantKey}
+                          baseUserId={tabProps?.baseUserId}
+                          pluginId={tabProps?.pluginId}/>
+    },
+    {
+      key: 'extract',
+      label: '提取水印',
+      children: <ExtractTab />
+    }
+  ]
+
   return (
     <>
-      <p>当前用户：{userId}</p>
       <Tabs items={items}/>
     </>
   )
