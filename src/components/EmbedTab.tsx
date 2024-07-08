@@ -1,15 +1,21 @@
-import {Button, Form, Input, Switch} from "antd";
-import {Watermark, TabProps} from "../lib/types";
+import {Alert, Button, Form, Input, message, Switch} from "antd";
+import {TabProps, Watermark} from "../lib/types";
 import {bitable, IField, ToastType, ViewType} from "@lark-base-open/js-sdk";
 import {useEffect, useState} from "react";
-import axios, {AxiosError} from "axios";
+import axios from "axios";
 import * as XLSX from '@e965/xlsx'
+import TextArea from "antd/es/input/TextArea";
+import {useTranslation} from "react-i18next";
 
 const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
   const [form] = Form.useForm();
   const [tableName, setTableName] = useState<string>()
   const [loading, setLoading] = useState(false)
+  const [isCustomize, setIsCustomize] = useState(false)
+  const {t} = useTranslation();
   const ui = bitable.ui;
+  const [messageApi, contextHolder] = message.useMessage();
+
   useEffect(() => {
     const fn = async () => {
       const table = await bitable.base.getActiveTable();
@@ -23,10 +29,11 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
     setLoading(true)
     try {
       await export2Excel(watermark)
+      await messageApi.open({
+        type: 'success',
+        content: t('embed.message.success'),
+      });
     } catch (err: any) {
-      if (err instanceof AxiosError) {
-        console.log(err)
-      }
       await ui.showToast({
         toastType: ToastType.error,
         message: err.message
@@ -36,16 +43,9 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
     }
   };
 
-  const formItemLayout = {
-    labelCol: {
-      xs: { span: 24 },
-      sm: { span: 8 },
-    },
-    wrapperCol: {
-      xs: { span: 24 },
-      sm: { span: 16 },
-    },
-  };
+  const handleSwitchChange = (isCustomize: boolean) => {
+    setIsCustomize(isCustomize)
+  }
 
   const export2Excel = async (watermark: Watermark) => {
     // 获取当前表格
@@ -102,10 +102,19 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
 
     // 创建 FormData 对象
     const formData = new FormData();
-    formData.append("fContent", JSON.stringify(watermark))
-    formData.append("document", blob, "file.xlsx")
+    if (watermark.customizeContent) {
+      formData.append("customizeContent", watermark.customizeContent)
+    } else {
+      formData.append("from", watermark.from)
+      formData.append("to", watermark.to)
+    }
 
-    const resp = await axios.post('https://pro.api.cdyufei.com/lark/watermark/flowable/embed', formData, {
+    if (watermark.pContent) {
+      formData.append("pContent", watermark.pContent)
+    }
+    formData.append("document", blob, "tmp.xlsx")
+
+    const resp = await axios.post('https://pro.api.cdyufei.com/lark/watermark/transfer/embed', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
         'X-Plugin-Id': pluginId,
@@ -126,23 +135,46 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
   }
   return (
     <>
+      {contextHolder}
+      <Alert style={{padding: 10}}
+             type="info"
+             message={t('about')}
+             showIcon/>
       <Form
-        {...formItemLayout}
         form={form}
         name="watermark"
         onFinish={onFinish}
       >
-        <Form.Item label="发送方" name="from" rules={[{required: true, message: '请输入发送方信息'}]}>
-          <Input placeholder="请输入发送方信息"/>
+        <Form.Item label={t('embed.form.label.isCustomize')} name="isCustomize"
+                   valuePropName="checked">
+          <Switch checkedChildren={t('embed.form.isCustomize.switch.yes')}
+                  unCheckedChildren={t('embed.form.isCustomize.switch.no')}
+                  onChange={handleSwitchChange}/>
         </Form.Item>
-        <Form.Item label="接收方" name="to" rules={[{required: true, message: '请输入接收方信息'}]}>
-          <Input placeholder="请输入接收方信息"/>
-        </Form.Item>
-        <Form.Item label="是否添加明文水印" name="needPlain">
-          <Switch defaultChecked={true}/>
+        {!isCustomize ? <>
+            <Form.Item label={t('embed.form.label.sender')}
+                       name="from"
+                       rules={[{required: true, message: t('rule.message.required')}]}>
+              <Input placeholder={t('embed.form.sender.input.placeholder')}/>
+            </Form.Item>
+            <Form.Item label={t('embed.form.label.receiver')}
+                       name="to"
+                       rules={[{required: true, message: t('rule.message.required')}]}>
+              <Input placeholder={t('embed.form.receiver.input.placeholder')}/>
+            </Form.Item>
+          </> :
+          <Form.Item label={t('embed.form.label.customize.content')}
+                     name="customizeContent"
+                     rules={[{required: true, message: t('rule.message.required')}]}>
+            <TextArea placeholder={t('embed.form.customize.content')} rows={4}/>
+          </Form.Item>}
+        <Form.Item label={t('embed.form.label.plainWatermark')} name="pContent">
+          <Input placeholder={t('embed.form.plainWatermark.input.placeholder')}/>
         </Form.Item>
         <Form.Item>
-          <Button loading={loading} type="primary" htmlType="submit">提交</Button>
+          <Button loading={loading} type="primary" htmlType="submit">
+            {t('embed.form.submit')}
+          </Button>
         </Form.Item>
       </Form>
     </>

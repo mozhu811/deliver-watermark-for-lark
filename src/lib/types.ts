@@ -1,11 +1,13 @@
 export interface Watermark {
-  from: string,
-  to: string,
+  from: string
+  to: string
   time?: Date
+  pContent?: string
+  customizeContent: string
 }
 
-export interface TabProps{
+export interface TabProps {
   pluginId?: string,
-  tenantKey?: string
-  baseUserId?: string
+  tenantKey?: string,
+  baseUserId?: string,
 }
