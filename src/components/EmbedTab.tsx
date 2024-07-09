@@ -1,8 +1,8 @@
 import {Alert, Button, Form, Input, message, Switch} from "antd";
 import {TabProps, Watermark} from "../lib/types";
-import {bitable, IField, ToastType, ViewType} from "@lark-base-open/js-sdk";
+import {bitable, ToastType, ViewType} from "@lark-base-open/js-sdk";
 import {useEffect, useState} from "react";
-import axios from "axios";
+import axios, {AxiosError} from "axios";
 import * as XLSX from '@e965/xlsx'
 import TextArea from "antd/es/input/TextArea";
 import {useTranslation} from "react-i18next";
@@ -41,10 +41,27 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
         content: t('embed.message.success'),
       });
     } catch (err: any) {
-      await ui.showToast({
-        toastType: ToastType.error,
-        message: t('message.unknown.error', {errorMsg: err.message})
-      });
+      if (err instanceof AxiosError) {
+        if (err.response && err.response.data instanceof Blob){
+          const reader = new FileReader();
+          reader.onload = function () {
+            // 解析错误信息
+            if (typeof reader.result === 'string'){
+              const errorMessage = JSON.parse(reader.result).message;
+              messageApi.open({
+                type: 'error',
+                content: t('message.unknown.error', {errorMsg: errorMessage}),
+              });
+            }
+          };
+          reader.readAsText(err.response.data);
+        }
+      } else {
+        messageApi.open({
+          type: 'error',
+          content: t('message.unknown.error', {errorMsg: err.message}),
+        });
+      }
     } finally {
       setLoading(false)
     }
@@ -61,20 +78,19 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
     const activeView = await table.getActiveView();
     const viewType = await activeView.getType();
     if (viewType !== ViewType.Grid) {
-      await ui.showToast({
-        toastType: ToastType.error,
-        message: '仅支持将表格视图导出为Excel'
+      messageApi.open({
+        type: 'error',
+        content: t('unsupported.view.type.error'),
       });
-      return;
+      return Promise.reject()
     }
     const viewName = await activeView.getName();
     // 获取可见字段ID
     const vfIdList = await activeView.getVisibleFieldIdList();
-    const fieldMetaList = await activeView.getFieldMetaList();
 
     // 获取字段数据
     const recordIdList = (await activeView.getVisibleRecordIdList()).filter((id): id is string => !!id);
-    const fieldsPromises = fieldMetaList.map(fieldMeta => table.getFieldById(fieldMeta.id));
+    const fieldsPromises = vfIdList.map(fieldId => table.getFieldById(fieldId));
     const fields = await Promise.all(fieldsPromises);
 
     const rowsPromises = recordIdList.map(async (recordId) => {
@@ -83,6 +99,7 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
     });
     const rows = await Promise.all(rowsPromises);
 
+    // 生成 Excel
     const workSheet = XLSX.utils.aoa_to_sheet(rows);
     const workBook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workBook, workSheet, viewName);
@@ -104,28 +121,24 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
     }
     formData.append("document", blob, "tmp.xlsx")
 
-    try {
-      const resp = await axios.post('https://pro.api.cdyufei.com/lark/watermarks/transferable/embedding', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'X-Plugin-Id': pluginId,
-          'X-Tenant-Key': tenantKey,
-          'X-Base-User-Id': baseUserId,
-        },
-        responseType: 'blob'
-      });
-      const url = window.URL.createObjectURL(resp.data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${tableName}.xlsx`; // 设置下载文件的名称
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error uploading and downloading file:', error);
-      throw new Error(t('embed.message.upload_error'));
-    }
+
+    const resp = await axios.post('https://pro.api.cdyufei.com/lark/watermarks/transferable/embedding', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'X-Plugin-Id': pluginId,
+        'X-Tenant-Key': tenantKey,
+        'X-Base-User-Id': baseUserId,
+      },
+      responseType: 'blob'
+    });
+    const url = window.URL.createObjectURL(resp.data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${tableName}.xlsx`; // 设置下载文件的名称
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   }
   return (
     <>
@@ -133,7 +146,7 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
       <Alert style={{padding: 10}}
              type="warning"
              message={t('about.message')}
-             description={t('about.description').split('\n').map((line,index) => (<p key={index}>{line}</p>))}
+             description={t('about.description').split('\n').map((line, index) => (<p key={index}>{line}</p>))}
              showIcon/>
       <Form
         form={form}

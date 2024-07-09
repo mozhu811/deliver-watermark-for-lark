@@ -1,8 +1,9 @@
 {
   "message.unknown.error": "未知错误: {{errorMsg}}",
+  "unsupported.view.type.error": "仅支持将表格视图导出为Excel",
   "message.table.name.error": "获取数据表名失败",
   "about.message": "您应该知道的",
-  "about.description": "1.在本插件中，您可以实现使用具有隐形性的可流转水印来记录您的文件传输信息。如果您的文件发生了意料之外的泄漏，您可以通过提取被泄漏文件的水印信息定位是哪位接收人泄漏的文件。\n2.可流转水印在文件中是不可见的，但是文本水印是可见的。\n3.本插件不记录关于您的数据表的任何信息。\n4.本插件会调用远程接口，该接口与本插件为同一开发者，同样不会记录任何关于您导出数据的信息。",
+  "about.description": "1.可流转水印在文件中是不可见的，但是文本水印是可见的。\n2.本插件不存储关于您的数据表的任何信息。",
   "tab.label.embed": "嵌入水印",
   "tab.label.extract": "提取水印",
   "embed.message.success": "嵌入成功",

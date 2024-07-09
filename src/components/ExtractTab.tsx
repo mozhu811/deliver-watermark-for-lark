@@ -25,7 +25,6 @@ const ExtractTab = ({pluginId, tenantKey, baseUserId}: TabProps) => {
       if (info.file.status === 'uploading') {
         return;
       }
-      console.log(info.file, info.fileList);
       if (info.file.status === 'done') {
         setWatermarks(info.file.response)
         message.success(t('extract.message.success'));

@@ -1,8 +1,9 @@
 {
   "message.unknown.error": "Unknown error: {{errorMsg}}",
+  "unsupported.view.type.error": "Only grid view export to Excel is supported",
   "message.table.name.error": "Failed to retrieve table name",
   "about.message": "What You Should Know",
-  "about.description": "1. In this plugin, you can use an invisible transferable watermark to record your file transfer information. If your file is unexpectedly leaked, you can locate which recipient leaked the file by extracting the watermark information from the leaked file.\n2. The transferable watermark is invisible in the document, but the text watermark is visible.\n3. This plugin does not record any information about your data tables.\n4. This plugin calls a remote interface, which is provided by the same developer as this plugin and also does not record any information about your exported data.",
+  "about.description": "1. The transferable watermark is invisible in the file, but the text watermark is visible.\n2. This extension does not store any information about your data table.",
   "tab.label.embed": "Embed Watermark",
   "tab.label.extract": "Extract Watermark",
   "embed.message.success": "Embedding successful",
