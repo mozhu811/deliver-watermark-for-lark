@@ -1,6 +1,6 @@
 import {Alert, Button, Form, Input, message, Switch} from "antd";
 import {TabProps, Watermark} from "../lib/types";
-import {bitable, ToastType, ViewType} from "@lark-base-open/js-sdk";
+import {bitable, ViewType} from "@lark-base-open/js-sdk";
 import {useEffect, useState} from "react";
 import axios, {AxiosError} from "axios";
 import * as XLSX from '@e965/xlsx'
@@ -13,7 +13,6 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
   const [loading, setLoading] = useState(false)
   const [isCustomize, setIsCustomize] = useState(false)
   const {t} = useTranslation();
-  const ui = bitable.ui;
   const [messageApi, contextHolder] = message.useMessage();
 
   useEffect(() => {
@@ -23,9 +22,9 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
         const tableName = await table.getName();
         setTableName(tableName)
       } catch (error) {
-        await ui.showToast({
-          toastType: ToastType.error,
-          message: t('message.table.name.error')
+        await messageApi.open({
+          type: 'error',
+          content: t('message.table.name.error')
         })
       }
     }
