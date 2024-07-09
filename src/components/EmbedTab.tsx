@@ -88,6 +88,17 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
     // 获取可见字段ID
     const vfIdList = await activeView.getVisibleFieldIdList();
 
+    // 添加header
+    const fmList = await activeView.getFieldMetaList();
+    const rows: string[][] = []
+    const header: string[] = []
+    for (const fieldMeta of fmList) {
+      if (!vfIdList?.includes(fieldMeta.id)) {
+        continue;
+      }
+      header.push(fieldMeta.name);
+    }
+    rows.push(header)
     // 获取字段数据
     const recordIdList = (await activeView.getVisibleRecordIdList()).filter((id): id is string => !!id);
     const fieldsPromises = vfIdList.map(fieldId => table.getFieldById(fieldId));
@@ -97,7 +108,8 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
       const rowPromises = fields.map(field => field.getCellString(recordId));
       return await Promise.all(rowPromises);
     });
-    const rows = await Promise.all(rowsPromises);
+    const dataRows = await Promise.all(rowsPromises);
+    dataRows.forEach(row => rows.push(row))
 
     // 生成 Excel
     const workSheet = XLSX.utils.aoa_to_sheet(rows);
