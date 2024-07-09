@@ -18,9 +18,16 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
 
   useEffect(() => {
     const fn = async () => {
-      const table = await bitable.base.getActiveTable();
-      const tableName = await table.getName();
-      setTableName(tableName)
+      try {
+        const table = await bitable.base.getActiveTable();
+        const tableName = await table.getName();
+        setTableName(tableName)
+      } catch (error) {
+        await ui.showToast({
+          toastType: ToastType.error,
+          message: t('message.table.name.error')
+        })
+      }
     }
     fn()
   }, []);
@@ -29,14 +36,14 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
     setLoading(true)
     try {
       await export2Excel(watermark)
-      await messageApi.open({
+      messageApi.open({
         type: 'success',
         content: t('embed.message.success'),
       });
     } catch (err: any) {
       await ui.showToast({
         toastType: ToastType.error,
-        message: err.message
+        message: t('message.unknown.error', {errorMsg: err.message})
       });
     } finally {
       setLoading(false)
@@ -65,33 +72,16 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
     const vfIdList = await activeView.getVisibleFieldIdList();
     const fieldMetaList = await activeView.getFieldMetaList();
 
-    // 保存的数据
-    const fields: IField[] = [];
-    const rows: any[][] = [[]];
-
-    for (const fieldMeta of fieldMetaList) {
-      const field = await table.getFieldById(fieldMeta.id);
-      if (!vfIdList?.includes(fieldMeta.id)) {
-        continue;
-      }
-      fields.push(field);
-      rows[0].push(fieldMeta.name);
-    }
-
     // 获取字段数据
-    const recordIdList = await activeView.getVisibleRecordIdList();
-    for (const recordId of recordIdList) {
-      if (!recordId) {
-        continue;
-      }
+    const recordIdList = (await activeView.getVisibleRecordIdList()).filter((id): id is string => !!id);
+    const fieldsPromises = fieldMetaList.map(fieldMeta => table.getFieldById(fieldMeta.id));
+    const fields = await Promise.all(fieldsPromises);
 
-      const row: string[] = [];
-      for (const field of fields) {
-        const cellString = await field.getCellString(recordId);
-        row.push(cellString);
-      }
-      rows.push(row);
-    }
+    const rowsPromises = recordIdList.map(async (recordId) => {
+      const rowPromises = fields.map(field => field.getCellString(recordId));
+      return await Promise.all(rowPromises);
+    });
+    const rows = await Promise.all(rowsPromises);
 
     const workSheet = XLSX.utils.aoa_to_sheet(rows);
     const workBook = XLSX.utils.book_new();
@@ -109,36 +99,41 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
       formData.append("to", watermark.to)
     }
 
-    if (watermark.pContent) {
-      formData.append("pContent", watermark.pContent)
+    if (watermark.text) {
+      formData.append("text", watermark.text)
     }
     formData.append("document", blob, "tmp.xlsx")
 
-    const resp = await axios.post('https://pro.api.cdyufei.com/lark/watermark/transfer/embed', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        'X-Plugin-Id': pluginId,
-        'X-Tenant-Key': tenantKey,
-        'X-Base-User-Id': baseUserId,
-      },
-      responseType: 'blob'
-    });
-
-    const url = window.URL.createObjectURL(resp.data);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${tableName}.xlsx`; // 设置下载文件的名称
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+    try {
+      const resp = await axios.post('https://pro.api.cdyufei.com/lark/watermarks/transferable/embedding', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'X-Plugin-Id': pluginId,
+          'X-Tenant-Key': tenantKey,
+          'X-Base-User-Id': baseUserId,
+        },
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(resp.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${tableName}.xlsx`; // 设置下载文件的名称
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error uploading and downloading file:', error);
+      throw new Error(t('embed.message.upload_error'));
+    }
   }
   return (
     <>
       {contextHolder}
       <Alert style={{padding: 10}}
-             type="info"
-             message={t('about')}
+             type="warning"
+             message={t('about.message')}
+             description={t('about.description').split('\n').map((line,index) => (<p key={index}>{line}</p>))}
              showIcon/>
       <Form
         form={form}
@@ -168,8 +163,8 @@ const EmbedTab = ({pluginId, baseUserId, tenantKey}: TabProps) => {
                      rules={[{required: true, message: t('rule.message.required')}]}>
             <TextArea placeholder={t('embed.form.customize.content')} rows={4}/>
           </Form.Item>}
-        <Form.Item label={t('embed.form.label.plainWatermark')} name="pContent">
-          <Input placeholder={t('embed.form.plainWatermark.input.placeholder')}/>
+        <Form.Item label={t('embed.form.label.textWatermark')} name="text">
+          <Input placeholder={t('embed.form.textWatermark.input.placeholder')}/>
         </Form.Item>
         <Form.Item>
           <Button loading={loading} type="primary" htmlType="submit">

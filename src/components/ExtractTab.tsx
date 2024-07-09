@@ -11,32 +11,31 @@ const ExtractTab = ({pluginId, tenantKey, baseUserId}: TabProps) => {
     [])
   const {t} = useTranslation();
   const props: UploadProps = {
-    name: 'file',
-    action: 'https://pro.api.cdyufei.com/lark/watermark/flowable/extract',
+    name: 'document',
+    action: 'https://pro.api.cdyufei.com/lark/watermarks/transferable/extraction',
     accept: '.xlsx,.xls',
-    showUploadList: false,
+    maxCount: 1,
     headers: {
-      authorization: 'authorization-text',
+      'X-Plugin-Id': pluginId,
+      'X-Tenant-Key': tenantKey,
+      'X-Base-User-Id': baseUserId,
     },
-    onChange(info) {
+    onChange: async (info) => {
       setLoading(true)
       if (info.file.status === 'uploading') {
         return;
       }
       console.log(info.file, info.fileList);
       if (info.file.status === 'done') {
-        message.success(`${info.file.name} file uploaded successfully`);
+        setWatermarks(info.file.response)
+        message.success(t('extract.message.success'));
       } else if (info.file.status === 'error') {
-        message.error(`${info.file.name} file upload failed.`);
+        setWatermarks([])
+        message.error(t('extract.message.failed'));
       }
       setLoading(false)
     },
     progress: {
-      strokeColor: {
-        '0%': '#108ee9',
-        '100%': '#87d068',
-      },
-      strokeWidth: 3,
       format: (percent) => percent && `${parseFloat(percent.toFixed(2))}%`,
     },
   };
@@ -58,18 +57,18 @@ const ExtractTab = ({pluginId, tenantKey, baseUserId}: TabProps) => {
                   return (
                     <div key={`${w.from}-${w.to}-${index}`}>
                       {
-                        w.isCustomize ? <div>
+                        w.customizeContent ? <div>
                             <div style={{marginTop: 14}}>
                               {w.customizeContent}
                             </div>
-                            <p style={{color: 'gray'}}>{t('extract.info.time')}：2024/07/07 19:22:22</p>
+                            <p style={{color: 'gray'}}>{`${t('extract.info.time')}：${w.time}`}</p>
                           </div> :
                           <>
                             <p>
-                              <span style={{fontSize: 16}}>{t('extract.info.sender')}：</span>admin
+                              <span>{t('extract.info.sender')}：</span>{w.from}
                             </p>
                             <p>
-                              <span style={{fontSize: 16}}>{t('extract.info.receiver')}：</span>admin
+                              <span>{t('extract.info.receiver')}：</span>{w.to}
                             </p>
                             <p>
                               <span style={{color: 'gray'}}>

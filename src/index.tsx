@@ -17,8 +17,14 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
 )
 
 function LoadApp() {
-  const [tabProps, setTabProps] = useState<TabProps>()
-  const { t } = useTranslation();
+  const [tabProps, setTabProps] = useState<TabProps>(
+    {
+      baseUserId: '',
+      tenantKey: '',
+      pluginId: '',
+    }
+  )
+  const {t} = useTranslation();
   useEffect(() => {
     const fn = async () => {
       // const lang = await bitable.bridge.getLanguage();
@@ -35,24 +41,26 @@ function LoadApp() {
     {
       key: 'embed',
       label: t('tab.label.embed'),
-      children: <EmbedTab tenantKey={tabProps?.tenantKey}
-                          baseUserId={tabProps?.baseUserId}
-                          pluginId={tabProps?.pluginId}/>
+      children: <EmbedTab tenantKey={tabProps.tenantKey}
+                          baseUserId={tabProps.baseUserId}
+                          pluginId={tabProps.pluginId}/>
     },
     {
       key: 'extract',
       label: t('tab.label.extract'),
-      children: <ExtractTab />
+      children: <ExtractTab tenantKey={tabProps.tenantKey}
+                            baseUserId={tabProps.baseUserId}
+                            pluginId={tabProps.pluginId}/>
     }
   ]
 
   return (
     <div>
-      <main  style={{ minHeight: '95vh'}}>
+      <main style={{minHeight: '95vh'}}>
         <Tabs items={items}/>
       </main>
-      <footer style={{ display: 'flex', justifyContent: 'center'}}>
-        Powered by <a href="https://github.com/mozhu811" target='_blank' style={{ marginLeft: 8}}>墨竹</a>
+      <footer style={{display: 'flex', justifyContent: 'center'}}>
+        Powered by <a href="https://github.com/mozhu811" target='_blank' style={{marginLeft: 8}}>墨竹</a>
       </footer>
     </div>
   )
