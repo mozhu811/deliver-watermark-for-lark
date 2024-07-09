@@ -3,7 +3,7 @@
   "unsupported.view.type.error": "仅支持将表格视图导出为Excel",
   "message.table.name.error": "获取数据表名失败",
   "about.message": "您应该知道的",
-  "about.description": "1.可流转水印在文件中是不可见的，但是文本水印是可见的。\n2.本插件不存储关于您的数据表的任何信息。",
+  "about.description": "1.流转水印在文件中是不可见的，但是文本水印是可见的。\n2.本插件不存储关于您的数据表的任何信息。",
   "tab.label.embed": "嵌入水印",
   "tab.label.extract": "提取水印",
   "embed.message.success": "嵌入成功",
